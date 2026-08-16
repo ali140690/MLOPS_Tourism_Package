@@ -1,16 +1,23 @@
-# -------------------------------------------------------------------
-# Imports
-# -------------------------------------------------------------------
-import streamlit as st
-import pandas as pd
-import joblib
+
 from pathlib import Path
 
-# Load model from deployment folder
-MODEL_PATH = Path("tourism_project/deployment")/ "tourism_model.pkl"
+import joblib
+import pandas as pd
+import streamlit as st
+
+
+# ============================================================
+# LOAD MODEL
+# ============================================================
+
+MODEL_PATH = Path(__file__).resolve().parent / "tourism_model.pkl"
 
 model = joblib.load(MODEL_PATH)
 
+
+# ============================================================
+# PAGE CONFIG
+# ============================================================
 
 st.set_page_config(
     page_title="Tourism Package Prediction",
@@ -19,24 +26,38 @@ st.set_page_config(
 )
 
 st.title("🏨 Tourism Package Prediction")
+
 st.write(
     "Enter customer details to predict whether the customer "
-    "will purchase the tourism package."
+    "is likely to purchase the tourism package."
 )
 
 
-# User inputs
+# ============================================================
+# USER INPUTS
+# ============================================================
+
 col1, col2 = st.columns(2)
 
+
 with col1:
-    age = st.number_input("Age", min_value=18, max_value=100, value=35)
+
+    age = st.number_input(
+        "Age",
+        min_value=18,
+        max_value=100,
+        value=35
+    )
 
     typeofcontact = st.selectbox(
         "Type of Contact",
         ["Self Enquiry", "Company Invited"]
     )
 
-    citytier = st.selectbox("City Tier", [1, 2, 3])
+    citytier = st.selectbox(
+        "City Tier",
+        [1, 2, 3]
+    )
 
     durationofpitch = st.number_input(
         "Duration of Pitch",
@@ -46,10 +67,18 @@ with col1:
 
     occupation = st.selectbox(
         "Occupation",
-        ["Salaried", "Small Business", "Large Business", "Free Lancer"]
+        [
+            "Salaried",
+            "Small Business",
+            "Large Business",
+            "Free Lancer"
+        ]
     )
 
-    gender = st.selectbox("Gender", ["Male", "Female"])
+    gender = st.selectbox(
+        "Gender",
+        ["Male", "Female"]
+    )
 
     numberofpersonvisiting = st.number_input(
         "Number of Persons Visiting",
@@ -65,11 +94,18 @@ with col1:
 
     productpitched = st.selectbox(
         "Product Pitched",
-        ["Basic", "Deluxe", "Standard", "Super Deluxe", "King"]
+        [
+            "Basic",
+            "Deluxe",
+            "Standard",
+            "Super Deluxe",
+            "King"
+        ]
     )
 
 
 with col2:
+
     preferredpropertystar = st.selectbox(
         "Preferred Property Star",
         [3, 4, 5]
@@ -77,7 +113,11 @@ with col2:
 
     maritalstatus = st.selectbox(
         "Marital Status",
-        ["Single", "Married", "Divorced"]
+        [
+            "Single",
+            "Married",
+            "Divorced"
+        ]
     )
 
     numberoftrips = st.number_input(
@@ -86,14 +126,20 @@ with col2:
         value=2
     )
 
-    passport = st.selectbox("Passport", [0, 1])
+    passport = st.selectbox(
+        "Passport",
+        [0, 1]
+    )
 
     pitchsatisfactionscore = st.selectbox(
         "Pitch Satisfaction Score",
         [1, 2, 3, 4, 5]
     )
 
-    owncar = st.selectbox("Own Car", [0, 1])
+    owncar = st.selectbox(
+        "Own Car",
+        [0, 1]
+    )
 
     numberofchildrenvisiting = st.number_input(
         "Number of Children Visiting",
@@ -103,7 +149,13 @@ with col2:
 
     designation = st.selectbox(
         "Designation",
-        ["AVP", "VP", "Manager", "Senior Manager", "Executive"]
+        [
+            "AVP",
+            "VP",
+            "Manager",
+            "Senior Manager",
+            "Executive"
+        ]
     )
 
     monthlyincome = st.number_input(
@@ -113,7 +165,10 @@ with col2:
     )
 
 
-# Create dataframe
+# ============================================================
+# CREATE INPUT DATAFRAME
+# ============================================================
+
 input_data = pd.DataFrame({
     "Age": [age],
     "TypeofContact": [typeofcontact],
@@ -136,27 +191,76 @@ input_data = pd.DataFrame({
 })
 
 
-# Prediction
-if st.button("Predict Package Purchase"):
+# ============================================================
+# MATCH MODEL'S EXPECTED COLUMNS
+# ============================================================
+
+# The model remembers the columns used during training.
+expected_columns = model.feature_names_in_
+
+# Add any missing columns with a default value.
+for column in expected_columns:
+    if column not in input_data.columns:
+        if column == "CustomerID":
+            input_data[column] = 0
+        else:
+            input_data[column] = 0
+
+# Keep exactly the columns used during training.
+input_data = input_data[expected_columns]
+
+
+# ============================================================
+# PREDICTION
+# ============================================================
+
+if st.button(
+    "Predict Package Purchase",
+    type="primary"
+):
 
     prediction = model.predict(input_data)[0]
 
+    st.subheader("Prediction")
+
     if prediction == 1:
+
         st.success(
-            "🎉 Customer is likely to purchase the tourism package."
-        )
-    else:
-        st.info(
-            "Customer is unlikely to purchase the tourism package."
+            "🎉 Customer is likely to purchase "
+            "the tourism package."
         )
 
+    else:
+
+        st.info(
+            "Customer is unlikely to purchase "
+            "the tourism package."
+        )
+
+
+    # ========================================================
+    # PROBABILITY
+    # ========================================================
+
     if hasattr(model, "predict_proba"):
-        probability = model.predict_proba(input_data)[0][1]
+
+        probability = model.predict_proba(
+            input_data
+        )[0][1]
 
         st.metric(
             "Purchase Probability",
             f"{probability:.2%}"
         )
 
-    st.subheader("Customer Input")
-    st.dataframe(input_data)
+
+    # ========================================================
+    # CUSTOMER DATA
+    # ========================================================
+
+    st.subheader("Customer Details")
+
+    st.dataframe(
+        input_data,
+        use_container_width=True
+    )
