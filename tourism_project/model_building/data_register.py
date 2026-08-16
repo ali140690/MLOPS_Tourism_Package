@@ -1,10 +1,28 @@
 
+from pathlib import Path
+import pandas as pd
 
-# Path to dataset inside the GitHub repository
-DATA_PATH = Path( "tourism_project/data/tourism.csv")
+
+# Project root
+PROJECT_ROOT = Path("tourism_project")
+
+# Dataset path
+DATA_PATH = PROJECT_ROOT / "data" / "tourism.csv"
+
+
+# Check dataset exists
+if not DATA_PATH.exists():
+    raise FileNotFoundError(
+        f"Dataset not found: {DATA_PATH}"
+    )
+
+
+# Load dataset
+df = pd.read_csv(DATA_PATH)
+
 
 # Expected columns
-EXPECTED_COLUMNS = [
+expected_columns = [
     "CustomerID",
     "ProdTaken",
     "Age",
@@ -24,36 +42,31 @@ EXPECTED_COLUMNS = [
     "OwnCar",
     "NumberOfChildrenVisiting",
     "Designation",
-    "MonthlyIncome",
+    "MonthlyIncome"
 ]
 
 
-def register_dataset():
-    """Read, validate, and summarize the tourism dataset."""
-
-    if not DATA_PATH.exists():
-        raise FileNotFoundError(f"Dataset not found: {DATA_PATH}")
-
-    df = pd.read_csv(DATA_PATH)
-
-    # Check expected columns
-    missing_columns = [
-        column for column in EXPECTED_COLUMNS if column not in df.columns
-    ]
-
-    if missing_columns:
-        raise ValueError(
-            f"Missing expected columns: {', '.join(missing_columns)}"
-        )
-
-    print("Dataset registered successfully!")
-    print(f"File: {DATA_PATH}")
-    print(f"Rows: {df.shape[0]}")
-    print(f"Columns: {df.shape[1]}")
-    print(f"Missing values: {df.isnull().sum().sum()}")
-    print("\nColumns:")
-    print(", ".join(df.columns))
+# Check expected columns
+missing_columns = [
+    column for column in expected_columns
+    if column not in df.columns
+]
 
 
-if __name__ == "__main__":
-    register_dataset()
+if missing_columns:
+    raise ValueError(
+        f"Missing expected columns: {missing_columns}"
+    )
+
+
+# Print summary
+print("Dataset registered successfully.")
+print(f"Dataset path: {DATA_PATH}")
+print(f"Rows: {df.shape[0]}")
+print(f"Columns: {df.shape[1]}")
+
+print("\nColumns:")
+print(list(df.columns))
+
+print("\nTarget distribution:")
+print(df["ProdTaken"].value_counts())
